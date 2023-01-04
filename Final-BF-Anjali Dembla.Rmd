@@ -1,0 +1,418 @@
+---
+title: "Final-BF-Anjali Dembla"
+author: "Anjali Dembla"
+date: "2022-12-06"
+output: html_document
+---
+
+
+
+
+```{r}
+#Loading packages
+
+library(readr)
+library(fpp)
+library(fpp2)
+library(TTR)
+library(urca)
+
+#Importing the dataset
+library(readr)
+IPG3113N <- read_csv("C:\\Users\\Owner\\Downloads\\IPG3113N.csv")
+candy_ts <- ts(IPG3113N$IPG3113N,frequency = 12,start=c(2012,10))
+plot(candy_ts)
+print(candy_ts)
+
+traindata <- window(candy_ts,start=c(2012,10),end=c(2020,12))
+print(traindata)
+testdata <- window(candy_ts, start=c(2021,1))
+print(testdata)
+
+#Plots and Inference
+#•	Show a time series plot. 
+plot(candy_ts, main = "Monthly Production Values For Candies in US")
+
+#•	Please summaries your observations of the times series plot
+Acf(candy_ts)
+Acf(traindata)
+#OBSERVATIONS:-
+
+#We observe that there are patterns as shown by the auto-correlation plot which are periodic i.e there is a seasonal pattern observed 
+#There are peaks and trough
+#For a particular year, the values start decreasing from month of January i.e during initial period till July and from month of August the values start increasing till the end of the the year.
+#This is a monthly time series as the frequency is 12
+
+options(scipen=99)
+#Central Tendency
+
+#•	What are the min, max, mean, median, 1st and 3rd Quartile values of the times series? 
+min(candy_ts)
+max(candy_ts)
+range(candy_ts)
+mean(candy_ts)
+IQR(candy_ts)
+quantile(candy_ts)
+summary(candy_ts)
+#Min :- 77.0192 , Max:- 130.29 , Median :- 99.85
+#FIRST QUARTILE :- 92.05
+#Third Quartile :- 106.45
+
+#•	Show the box plot. 
+boxplot.stats(candy_ts)
+boxplot(candy_ts ,data=candy_ts, main = "Boxplot of Candy Production In US")
+boxplot(traindata ,data=traindata, main = "Boxplot of Candy production Training Values")
+#•	Can you summarize your observation about the time series from the summary stats and box plot? 
+#Box plots are a measure of how well distributed is the data in a data set. It divides the data set into three quartiles. Based on the summary stats and box plot, we can easily locate the minimum as well as maximum value of production values. 77.02 is the minimum value whereas 130.29 is the maximum value.. There are few outliers in the data set as visible in the plot.
+#For the box plot of train data, there are no outliers in the plot 
+
+
+
+##Decomposition
+
+#•	Plot the decomposition of the time series.
+stl_decomp <- stl(candy_ts,s.window ="periodic")
+stl_decomp
+plot(stl_decomp)
+attributes(stl_decomp)
+
+
+#•	Is the times series seasonal?
+#Yes it is the pattern repeats at regular interval of time
+
+#•	Is the decomposition additive or multiplicative? 
+ValueComp <- decompose(candy_ts)
+ValueComp
+plot(ValueComp)
+attributes(ValueComp)
+
+#The decomposition is "additive"
+
+#•	If seasonal, what are the values of the seasonal monthly indices? 
+# 1.2410256  , 0.7698196 , -2.1072758 , -6.9767092 , -10.2914152,  -9.6690272,
+#-10.0910383  , -2.5757128  , 3.3183237 , 10.9408659 , 12.0913524 , 13.3497913
+
+#•	For which month is the value of time series high and for which month is it low?
+max(ValueComp$figure) #December highest
+min(ValueComp$figure) # May lowest
+#The value is highest in December and lowest in May
+
+#•	Can you think of the reason behind the value being high in those months and low in those months?
+
+#In December, its winter season and its also the holiday season, with christmas being celebrated widely across the nation. Weather and humidity can also play a prominent role in the process of making candy, as it can have a dramatic impact on the quality of the finished product.As a rule of thumb, candy is made when the weather is cool and dry, as the candy will cool faster and reduce the likelihood of crystal formation. Demand of candies laso increase during this holiday season and hence the chances of making profits are high. During Month of May as the humidity increases and with the onset of summer it becomes the worst time to manufacture candies, with the heat those get melted and desired results may not be obtained and hence the production is decreased.
+
+#•	Show the plot for time series adjusted for seasonality. Overlay this with the line for actual time series? Does seasonality have big fluctuations to the value of time series? 
+
+plot(candy_ts)
+lines(seasadj(stl_decomp), col="Red")
+lines(seasadj(ValueComp), col="Red")
+
+#Yes, seasonality does not have big fluctuations to the value of timeseries
+
+##Naïve Method
+
+#	Output
+naive_forecast2 <- naive(traindata,6)
+plot(naive_forecast2)
+attributes(naive_forecast2)
+
+#	Perform Residual Analysis for this technique. 
+#o	Do a plot of residuals. What does the plot indicate?
+
+plot(naive_forecast2$residuals)
+
+#There are peaks with maximum values which then decrease sharply till negative values
+#fluctuations are random in nature, no meaningful pattern deciphered
+
+#	Do a Histogram plot of residuals. What does the plot indicate?
+
+hist(naive_forecast2$residuals)
+
+#The plot shows normalized pattern meaning no pattern in residuals.
+#The plot with trained data shows a little biased behaviour
+
+#o	Do a plot of fitted values vs. residuals. What does the plot indicate?
+
+plot(naive_forecast2$fitted ~ naive_forecast2$residuals)
+abline(v=0, col="blue")
+qqnorm(naive_forecast2$residuals)
+
+#add a straight diagonal line to the plot
+qqline(naive_forecast2$residuals) 
+
+#Residual values tend to slightly deviate from the normal line in case of train data
+#The  spread of residual values tend to more in case of higher fitted values compared to the lower ones
+#residuals are in mix of positive and negative values 
+
+#o	Do a plot of actual values vs. residuals. What does the plot indicate?
+
+plot(naive_forecast2$x ~ naive_forecast2$residuals)
+
+#The  spread of residual values tend to more in case of higher actual values compared to the lower ones
+#residuals are negative for mid level of actual values. For lower actual values residuals are greater than zero, although there is are a couple of values here which have negative residuals.
+#For year 2021, residuals are mainly positive. Residuals show extreme negative values in the year 2020,2014 ans 15, where the actuals are between 80 and 110.
+
+
+
+#	Do an ACF plot of the residuals? What does this plot indicate?
+Acf(naive_forecast2$residuals)
+
+#Values become significant at 5th lag, 7th lag, 12th,17th , 16th, 24th
+
+#•	Print the 5 measures of accuracy for this forecasting technique
+datafit2 <- naive(traindata,h=12)
+print(datafit2)
+print(traindata)
+print(testdata)
+accuracy(datafit2, testdata)
+accuracy(naive_forecast2)
+
+
+#•	Forecast 
+#o	Time series value for next year. Show table and plot
+naive_forecast3 <- naive(traindata,12)
+plot (naive_forecast3)
+naive_forecast3
+
+#•	Summarize this forecasting technique
+#The naïve method of forecasting dictates that we use the previous period to forecast for the next period.It can provide benchmark for the other models. The value estimated for each month of next year is 311600. This is for all months based on the last value taken.
+#o	How good is the accuracy?
+datafit3 <- naive(traindata, h=12)
+accuracy(datafit3,testdata)
+accuracy(naive_forecast3)
+#The accuracy has lowest MPE Values
+#o	What does it predict the value of time series will be in one year?
+naive_forecast4 <- naive(testdata,12)
+plot (naive_forecast4)
+naive_forecast4
+#The value will be 117.5581 for the year 2021 as per the train data taken
+#The values for test data will be 130.28 for the year 2023.
+#It remains constant for every month giving us a straight line.
+
+
+##Simple Moving Averages
+#•	Plot the graph for time series.
+
+
+plot(traindata)
+MA3_forecast1 <- ma(traindata,order=3)
+MA6_forecast1 <- ma(traindata,order=6)
+MA9_forecast1 <- ma(traindata,order=9)
+lines(MA3_forecast1,col="Red")
+lines(MA6_forecast1,col="Blue")
+lines(MA9_forecast1,col="Green")
+
+#•	Show the Simple Moving average of order 3 on the plot above in Red
+#•	Show the Simple Moving average of order 6 on the plot above in Blue
+#•	Show the Simple Moving average of order 9 on the plot above in Green
+#•	(Bonus) show the forecast of next 12 months using one of the simple average order that you feel works best for time series
+datafit4<-forecast(MA9_forecast1,h=12)
+accuracy(datafit4)
+plot(datafit4)
+
+
+#•	What are your observations of the plot as the moving average order goes up? 
+#The curves get more smoother as the order goes up, mape and mase reduces i.e model becomes better
+
+
+##
+# Simple Smoothing
+# •	Perform a simple smoothing forecast for next 12 months for the time series.
+
+SSE_Simple1 <- HoltWinters(traindata,beta=FALSE,gamma=FALSE)
+attributes(SSE_Simple1)
+plot(SSE_Simple1)
+# o	What is the value of alpha?  What does that value signify? 
+SSE_Simple1$alpha 
+#Its 0.9999339 The rate at which the weights decrease is controlled by this parameter  #larger weights to more recent observations than to observations from the distant past.
+# o	What is the value of initial state?
+SSE_Simple1$x
+# o	What is the value of sigma?  What does the sigma signify?
+#Its the standard deviation
+holt.sse <- holt(traindata, h = 100)
+holt.sse$model
+#Sigma is 6.0134
+
+# •	Perform Residual Analysis for this technique. 
+# o	Do a plot of residuals. What does the plot indicate?
+# o	Do a Histogram plot of residuals. What does the plot indicate?
+# o	Do a plot of fitted values vs. residuals. What does the plot indicate? 
+# o	Do a plot of actual values vs. residuals. What does the plot indicate?
+# o	Do an ACF plot of the residuals? What does this plot indicate?
+# •	Print the 5 measures of accuracy for this forecasting technique
+# •	Forecast 
+# o	Time series value for next year. Show table and plot
+# •	Summarize this forecasting technique
+# o	How good is the accuracy?
+# o	What does it predict the value of time series will be in one year?
+# o	Other observation
+
+#Residual analysis
+tmp_f2 <- forecast(SSE_Simple1)
+attributes(tmp_f2)
+plot(tmp_f2$residuals)
+hist(tmp_f2$residuals)
+Acf(tmp_f2$residuals)
+accuracy(tmp_f2,testdata)
+#ts-plot
+plot(tmp_f2)
+
+# Holt-Winters 
+# •	Perform Holt-Winters forecast for next 12 months for the time series.
+
+HW_forecast1 <- HoltWinters(traindata)
+plot(HW_forecast1)
+
+# o	What is the value of alpha?  What does that value signify? 
+HW_forecast1$alpha
+#Alpha specifies the coefficient for the level smoothing. Beta specifies the coefficient for the trend smoothing. Gamma specifies the coefficient for the seasonal smoothing
+# o	What is the value of beta? What does that value signify?
+HW_forecast1$beta
+# o	What is the value of gamma? What does that value signify?
+HW_forecast1$gamma
+#Alpha specifies the coefficient for the level smoothing. Beta specifies the coefficient for the trend smoothing. Gamma specifies the coefficient for the seasonal smoothing
+
+# o	What is the value of initial states for the level, trend and seasonality? What do these values signify? 
+# o	What is the value of sigma?  What does the sigma signify?
+# •	Perform Residual Analysis for this technique. 
+# o	Do a plot of residuals. What does the plot indicate?
+# o	Do a Histogram plot of residuals. What does the plot indicate?
+# o	Do a plot of fitted values vs. residuals. What does the plot indicate? 
+# o	Do a plot of actual values vs. residuals. What does the plot indicate?
+# o	Do an ACF plot of the residuals? What does this plot indicate?
+# •	Print the 5 measures of accuracy for this forecasting technique
+# •	Forecast 
+
+tmp_f3 <- forecast(HW_forecast1)
+attributes(tmp_f3)
+plot(tmp_f3$residuals)
+hist(tmp_f3$residuals)
+Acf(tmp_f3$residuals)
+accuracy(tmp_f3,testdata)
+# o	Time series value for next year. Show table and plot
+# •	Summarize this forecasting technique
+# o	How good is the accuracy?
+# o	What does it predict the value of time series will be in one year?
+# o	Other observation
+plot(tmp_f3)
+
+
+#ARIMA or Box-Jenkins
+#•	Is Time Series data Stationary? How did you verify?
+candy_ts %>% ur.kpss() %>% summary()
+
+#test statistic is smaller 1.0256 > 0.739 so null hypothesis rejected i.e series not stationary and require differencing # used kpss test to verify
+
+
+#•	How many differences are needed to make it stationary?  
+ndiffs(candy_ts)
+nsdiffs(candy_ts)
+
+
+#•	Is Seasonality component needed?
+#•	Plot the Time Series chart of the differenced series.
+#•	Plot the ACF and PACF plot of the differenced series.
+tsdisplay(candy_ts)
+diff1 <- diff(candy_ts, differences=1)
+plot(diff1)
+tsdisplay(diff1)
+
+diff1 %>% ur.kpss() %>% summary()
+#The differenced data is now stationary as the test statistic is lower than than critical value
+
+
+#•	Based on the ACF and PACF, which are the possible ARIMA model possible? 
+#•	Show the AIC, BIC and Sigma^2 for the possible models?
+
+auto_fit <- auto.arima(candy_ts, trace=TRUE, stepwise = FALSE)
+auto_fit
+attributes(auto_fit)
+plot(forecast(auto_fit,h=5,level=c(99.5)))
+
+#•	Based on the above AIC, BIC and Sigma^2 values, which model will you select?
+#sigma^2 = 14.95 , AIC=612.72 ,  AICc=613.31 ,  BIC=626.18
+#•	What is the final formula for ARIMA with the coefficients?
+#Best model: ARIMA(1,0,0)(2,1,0)[12] with drift
+ 
+#•	Perform Residual Analysis for this technique. 
+#o	Do a plot of residuals. What does the plot indicate?
+#Residual Analysis
+Acf(auto_fit$residuals)
+Box.test(residuals(auto_fit), lag=20, type="Ljung")
+
+plot.ts(residuals(auto_fit))
+hist(auto_fit$residuals)#normal
+tsdiag(auto_fit)
+
+
+plot(auto_fit$fitted ~ auto_fit$residuals)
+abline(v=0, col="blue")
+qqnorm(auto_fit$residuals)
+qqline(auto_fit$residuals)
+#o	Do a Histogram plot of residuals. What does the plot indicate?
+hist(auto_fit$residuals)#normal
+#o	Do a plot of fitted values vs. residuals. What does the plot indicate? 
+plot(auto_fit$fitted ~ auto_fit$residuals)
+abline(v=0, col="blue")
+qqnorm(auto_fit$residuals)
+qqline(auto_fit$residuals)
+#o	Do a plot of actual values vs. residuals. What does the plot indicate?
+plot(auto_fit$x ~ auto_fit$residuals)
+abline(v=0, col="blue")
+
+#o	Do an ACF plot of the residuals? What does this plot indicate?
+Acf(auto_fit$residuals)
+#•	Print the 5 measures of accuracy for this forecasting technique.
+#•	Forecast 
+#o	Next one year. Show table and plot
+#o	Next two years. Show table and plot
+#•	Summarize this forecasting technique
+#o	How good is the accuracy?
+#o	What does it predict time series will be in one year and next two years?
+#o	Other observation
+fc<- forecast(auto_fit, h=12)
+plot(fc)
+fc
+fc2<- forecast(auto_fit, h=24)
+plot(fc2)
+fc2
+accuracy(auto_fit)
+summary(auto_fit)
+
+# Accuracy Summary
+# •	Show a table of all the forecast method above with their accuracy measures.
+a1<-accuracy(datafit2, testdata)#naive
+a2<-accuracy(datafit4)#moving average
+a3<- accuracy(tmp_f2,testdata)#simplesmoothing
+a4<-accuracy(tmp_f3,testdata)#holtwinters
+a5<-accuracy(auto_fit)
+data<-data.frame(a1,a2,a3,a4,a5)
+print(data)
+
+# •	Show the best and worst forecast method for the accuracy measure of your choice. Why did you choose that accuracy measure?
+#Best is MA when rmse and mape are considered for ma of order 9 , the model behaves best.
+#Worst is in case of simple smoothing and then naive as the error values are higher compared to other models.
+
+
+# Conclusion
+# •	Summarize your analysis of time series value over the time-period.
+#Simple forecast plot
+forecast <- forecast(candy_ts, h=24)
+plot(forecast)
+#traindata forecast
+datafit4<-forecast(MA9_forecast1,h=24)
+plot(datafit4)
+#Forecasting using best model the actual timeseries.
+MA9_forecast2 <- ma(candy_ts,order=9)
+datafit10<-forecast(MA9_forecast2,h=24)
+plot(datafit10)
+
+# •	Based on your analysis and forecast above, do you think the value of the time series will increase, decrease or stay flat over the next year? How about next 2 years?
+#It will increase after 2022, shows peaks and troughs in the pattern, there has been an upward trend. Both the years show similar kind of pattern
+
+
+
+
+
+```
+
